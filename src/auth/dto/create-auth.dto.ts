@@ -18,5 +18,5 @@ export class CreateAuthDto extends CreateProviderDto {
   phone?: string;
 
   @IsString()
-  name: string;
+  name?: string;
 }

@@ -28,8 +28,8 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     const user = {
       id: profile.id,
       email: profile.emails[0].value,
-      display_name: profile.displayName,
-      photo: profile.picture,
+      name: profile.displayName,
+      photo: profile.photos[0].value,
       provider: profile.provider,
       accessToken,
       refresh_token,
@@ -39,7 +39,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     const token = await this.authService.validateUserOutsideProvider({
       email: user.email,
       nickname: user.nickname,
-      name: user.display_name,
+      name: user.name,
       image: user.photo,
       provider_id: user.id,
       provider_account_id: user.id,

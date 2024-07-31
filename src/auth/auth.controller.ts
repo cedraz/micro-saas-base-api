@@ -44,8 +44,6 @@ export class AuthController {
     // },
     // @Res({ passthrough: true }) res: Response,
   ): { access_token: string } {
-    console.log(req);
-
     return {
       access_token: 'qualquer coisa',
     };

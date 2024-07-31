@@ -66,9 +66,15 @@ export class AuthService {
       return user;
     }
 
-    const updatedUser = await this.userService.updateProviders(user.id, {
+    const updatedUser = await this.userService.update(user.id, {
       provider_id: createAuthDto.provider_id,
       provider_account_id: createAuthDto.provider_account_id,
+      access_token: createAuthDto.access_token,
+      refresh_token: createAuthDto.refresh_token,
+      access_token_expires: createAuthDto.access_token_expires,
+      image: createAuthDto.image,
+      email_verified_at: new Date(),
+      name: createAuthDto.name,
     });
 
     const accessTokenPayload = {

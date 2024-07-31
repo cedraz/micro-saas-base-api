@@ -32,14 +32,14 @@ model Provider {
 }
 
 model User {
-  id             String    @id @default(uuid())
-  email          String    @unique
-  nickname       String
-  password_hash  String?
-  email_verified DateTime?
-  name           String?
-  phone          String?
-  image          String?
+  id                String    @id @default(uuid())
+  email             String    @unique
+  nickname          String
+  password_hash     String?
+  email_verified_at DateTime?
+  name              String?
+  phone             String?
+  image             String?
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt

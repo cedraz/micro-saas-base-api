@@ -3,13 +3,11 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { ErrorMessagesHelper } from 'src/helpers/error-messages.helper';
-import bycript from 'bcrypt';
-import { v4 as uuidv4 } from 'uuid';
+import * as bycript from 'bcrypt';
 import { VerificationRequestService } from 'src/verification-request/verification-request.service';
 import { VerificationType } from '@prisma/client';
 import { MailerService } from 'src/mailer/mailer.service';
 import { User } from './entities/user.entity';
-import { CreateProviderDto } from 'src/auth/dto/create-provider.dto';
 
 @Injectable()
 export class UserService {
@@ -20,7 +18,7 @@ export class UserService {
   ) {}
 
   async create(createUserDto: CreateUserDto) {
-    const userExists = this.findByEmail(createUserDto.email);
+    const userExists = await this.findByEmail(createUserDto.email);
 
     if (userExists) {
       throw new ConflictException(ErrorMessagesHelper.USER_ALREADY_EXISTS);
@@ -40,7 +38,7 @@ export class UserService {
       },
     });
 
-    const token = uuidv4();
+    const token = Math.floor(100000 + Math.random() * 900000).toString();
 
     await this.verificationRequestService.createVerificationRequest({
       identifier: user.email,
@@ -62,8 +60,8 @@ export class UserService {
     return `This action returns all user`;
   }
 
-  findByEmail(email: string): Promise<User | null> {
-    return this.prismaService.user.findUnique({
+  async findByEmail(email: string): Promise<User | null> {
+    const user = await this.prismaService.user.findUnique({
       where: {
         email,
       },
@@ -71,27 +69,49 @@ export class UserService {
         providers: true,
       },
     });
+
+    return user;
   }
 
   findOne(id: string) {
     return `This action returns a #${id} user`;
   }
 
-  updateProviders(userId: string, createProviderDto: CreateProviderDto) {
+  // updateProviders(userId: string, createProviderDto: CreateProviderDto) {
+  //   return this.prismaService.user.update({
+  //     where: {
+  //       id: userId,
+  //     },
+  //     data: {
+  //       providers: {
+  //         create: createProviderDto,
+  //       },
+  //     },
+  //   });
+  // }
+
+  update(id: string, updateUserDto: UpdateUserDto) {
     return this.prismaService.user.update({
       where: {
-        id: userId,
+        id,
       },
       data: {
         providers: {
-          create: createProviderDto,
+          create: {
+            provider_id: updateUserDto.provider_id,
+            provider_account_id: updateUserDto.provider_account_id,
+            access_token: updateUserDto.access_token,
+            refresh_token: updateUserDto.refresh_token,
+            access_token_expires: updateUserDto.access_token_expires,
+          },
         },
+        image: updateUserDto.image,
+        phone: updateUserDto.phone,
+        name: updateUserDto.name,
+        email_verified_at: updateUserDto.email_verified_at,
+        nickname: updateUserDto.nickname,
       },
     });
-  }
-
-  update(id: string, updateUserDto: UpdateUserDto) {
-    return `This action updates a #${updateUserDto.email} user`;
   }
 
   remove(id: string) {

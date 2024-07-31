@@ -12,7 +12,7 @@ export class CreateUserDto {
 
   @IsString()
   @IsNotEmpty()
-  password?: string;
+  password: string;
 
   @IsString()
   image?: string;
@@ -21,5 +21,5 @@ export class CreateUserDto {
   phone?: string;
 
   @IsString()
-  name: string;
+  name?: string;
 }
