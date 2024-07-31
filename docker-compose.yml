@@ -1,0 +1,11 @@
+version: '3.1'
+
+services:
+  filmflow-pg:
+    image: bitnami/postgresql
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRESQL_USERNAME=johndoe
+      - POSTGRESQL_PASSWORD=randompassword
+      - POSTGRESQL_DATABASE=mydb
