@@ -10,6 +10,7 @@ import { VerificationRequestModule } from 'src/verification-request/verification
 import { MailerModule } from 'src/mailer/mailer.module';
 import { UserModule } from 'src/user/user.module';
 import { JwtStrategy } from './strategies/jwt.strategy';
+import { JobsModule } from 'src/jobs/jobs.module';
 
 @Module({
   controllers: [AuthController],
@@ -26,6 +27,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     VerificationRequestModule,
     MailerModule,
     UserModule,
+    JobsModule,
   ],
 })
 export class AuthModule {}

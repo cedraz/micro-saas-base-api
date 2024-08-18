@@ -4,8 +4,8 @@ import { UserController } from './user.controller';
 import { VerificationRequestService } from 'src/verification-request/verification-request.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { MailerService } from 'src/mailer/mailer.service';
-import { MailerModule } from 'src/mailer/mailer.module';
 import { VerificationRequestModule } from 'src/verification-request/verification-request.module';
+import { JobsModule } from 'src/jobs/jobs.module';
 
 @Module({
   controllers: [UserController],
@@ -16,6 +16,6 @@ import { VerificationRequestModule } from 'src/verification-request/verification
     VerificationRequestService,
   ],
   exports: [UserService],
-  imports: [MailerModule, VerificationRequestModule],
+  imports: [VerificationRequestModule, JobsModule],
 })
 export class UserModule {}
