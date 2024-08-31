@@ -40,6 +40,23 @@ class EnvironmentVariables {
 
   @IsString()
   GOOGLE_AUTH_CALLBACK_URL: string;
+
+  @IsString()
+  MAIL_HOST: string;
+
+  @IsNumber()
+  @Min(0)
+  @Max(65535)
+  MAIL_PORT: number;
+
+  @IsString()
+  MAIL_USER: string;
+
+  @IsString()
+  MAIL_PASS: string;
+
+  @IsString()
+  MAIL_SECURE: string;
 }
 
 export function validate(config: Record<string, unknown>) {

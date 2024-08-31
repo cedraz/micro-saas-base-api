@@ -11,6 +11,6 @@ export class SendEmailConsumerService extends WorkerHost {
   async process({ data }: Job<EmailData>) {
     const { to, message, subject } = data;
 
-    await this.mailerService.sendEmail({ to, message, subject });
+    await this.mailerService.sendVerifyEmailCode({ to, message, subject });
   }
 }

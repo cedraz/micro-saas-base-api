@@ -23,7 +23,7 @@ import { BullModule } from '@nestjs/bullmq';
     }),
     BullModule.forRoot({
       connection: {
-        host: 'redis-microsaas', // name of the service in the docker compose file
+        host: 'localhost', // name of the service in the docker compose file
         port: 6379,
       },
     }),

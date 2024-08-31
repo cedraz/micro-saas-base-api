@@ -8,6 +8,7 @@ import { VerificationRequestService } from 'src/verification-request/verificatio
 import { VerificationType } from '@prisma/client';
 import { User } from './entities/user.entity';
 import { SendEmailQueueService } from 'src/jobs/send-email-queue/send-email-queue.service';
+import { MailerService } from 'src/mailer/mailer.service';
 
 @Injectable()
 export class UserService {
@@ -52,11 +53,6 @@ export class UserService {
       subject: `Your email verification code is ${token}`,
       message: `Copy and paste this code to verify your email: ${token}`,
     });
-    // this.mailerService.sendEmail({
-    //   to: user.email,
-    //   subject: `Your email verification code is ${token}`,
-    //   message: `Copy and paste this code to verify your email: ${token}`,
-    // });
 
     return user;
   }
