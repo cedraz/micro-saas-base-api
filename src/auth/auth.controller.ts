@@ -5,11 +5,12 @@ import {
   Request,
   Body,
   Post,
+  Res,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { GoogleOAuthGuard } from './guards/google.guard';
-import { Request as ExpressRequest } from 'express';
+import { Request as ExpressRequest, Response } from 'express';
 import { LoginDto } from './dto/login.dto';
 
 @Controller('auth')
@@ -37,25 +38,21 @@ export class AuthController {
   })
   @UseGuards(GoogleOAuthGuard)
   handleRedirect(
-    @Request() req: ExpressRequest,
-    // @Request()
-    // req: ExpressRequest & {
-    //   user: { access_token: string; refresh_token: string };
-    // },
-    // @Res({ passthrough: true }) res: Response,
+    @Request()
+    req: ExpressRequest & {
+      user: { access_token: string; refresh_token: string };
+    },
+    @Res({ passthrough: true }) res: Response,
   ): { access_token: string } {
-    return {
-      access_token: 'qualquer coisa',
-    };
-    // const { access_token, refresh_token } = req.user;
+    const { access_token, refresh_token } = req.user;
 
-    // res.cookie('refresh_token', refresh_token, {
-    //   httpOnly: true,
-    //   secure: true,
-    //   sameSite: 'none',
-    // });
+    res.cookie('refresh_token', refresh_token, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none',
+    });
 
-    // return { access_token };
+    return { access_token };
   }
 
   @Post()

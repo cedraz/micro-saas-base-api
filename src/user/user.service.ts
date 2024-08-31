@@ -6,15 +6,16 @@ import { ErrorMessagesHelper } from 'src/helpers/error-messages.helper';
 import * as bycript from 'bcrypt';
 import { VerificationRequestService } from 'src/verification-request/verification-request.service';
 import { VerificationType } from '@prisma/client';
-import { MailerService } from 'src/mailer/mailer.service';
 import { User } from './entities/user.entity';
+import { SendEmailQueueService } from 'src/jobs/send-email-queue/send-email-queue.service';
+import { MailerService } from 'src/mailer/mailer.service';
 
 @Injectable()
 export class UserService {
   constructor(
     private prismaService: PrismaService,
     private verificationRequestService: VerificationRequestService,
-    private mailerService: MailerService,
+    private sendEmailQueueService: SendEmailQueueService,
   ) {}
 
   async create(createUserDto: CreateUserDto) {
@@ -47,7 +48,7 @@ export class UserService {
       expires: new Date(Date.now() + 1000 * 60 * 60 * 24),
     });
 
-    this.mailerService.sendEmail({
+    await this.sendEmailQueueService.execute({
       to: user.email,
       subject: `Your email verification code is ${token}`,
       message: `Copy and paste this code to verify your email: ${token}`,

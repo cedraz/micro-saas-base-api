@@ -1,11 +1,24 @@
-version: '3.1'
+version: '3.8'
 
 services:
-  filmflow-pg:
-    image: bitnami/postgresql
+  db:
+    image: postgres:alpine
     ports:
       - 5432:5432
     environment:
-      - POSTGRESQL_USERNAME=johndoe
-      - POSTGRESQL_PASSWORD=randompassword
-      - POSTGRESQL_DATABASE=mydb
+      - POSTGRES_USER=johndoe
+      - POSTGRES_PASSWORD=randompassword  # Certifique-se de que esta senha está correta
+      - POSTGRES_DB=mydb
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis-microsaas
+    ports:
+      - 6379:6379
+    environment:
+      - NODE_ENV=dev
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 10M

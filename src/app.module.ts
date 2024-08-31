@@ -7,6 +7,7 @@ import { AuthModule } from './auth/auth.module';
 import { VerificationRequestModule } from './verification-request/verification-request.module';
 import { PrismaService } from './prisma/prisma.service';
 import { JwtModule } from '@nestjs/jwt';
+import { BullModule } from '@nestjs/bullmq';
 
 @Module({
   imports: [
@@ -19,6 +20,12 @@ import { JwtModule } from '@nestjs/jwt';
     VerificationRequestModule,
     JwtModule.register({
       global: true,
+    }),
+    BullModule.forRoot({
+      connection: {
+        host: 'localhost', // name of the service in the docker compose file
+        port: 6379,
+      },
     }),
   ],
   controllers: [AppController],
