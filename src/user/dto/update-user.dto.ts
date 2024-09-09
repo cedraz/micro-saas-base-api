@@ -1,12 +1,31 @@
-import { IntersectionType, PartialType } from '@nestjs/swagger';
-import { CreateUserDto } from './create-user.dto';
-import { IsDate } from 'class-validator';
+import { ApiProperty, IntersectionType, PartialType } from '@nestjs/swagger';
+import { IsDate, IsOptional, IsString } from 'class-validator';
 import { CreateProviderDto } from 'src/auth/dto/create-provider.dto';
 
 export class UpdateUserDto extends IntersectionType(
-  PartialType(CreateUserDto),
   PartialType(CreateProviderDto),
 ) {
+  @IsString()
+  @IsOptional()
+  @ApiProperty()
+  nickname?: string;
+
+  @IsString()
+  @ApiProperty()
+  @IsOptional()
+  image?: string;
+
+  @IsString()
+  @ApiProperty()
+  @IsOptional()
+  phone?: string;
+
+  @IsString()
+  @ApiProperty()
+  @IsOptional()
+  name?: string;
+
   @IsDate()
+  @IsOptional()
   email_verified_at?: Date;
 }
