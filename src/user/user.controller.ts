@@ -84,6 +84,9 @@ export class UserController {
     return this.userService.remove(id);
   }
 
+  @ApiOperation({
+    summary: 'Recover password',
+  })
   @Post('recover-password')
   @UseGuards(PasswordRecoveryAuthGuard)
   @ApiBearerAuth()

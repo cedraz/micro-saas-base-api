@@ -25,7 +25,7 @@ export class VerificationRequestController {
       'Send verification request to create a common admin (only for master admins)',
   })
   @ApiBearerAuth()
-  @Post('create-admin-verification-request')
+  @Post('create-admin')
   @UseGuards(MasterAuthGuard)
   createAdminVerificationRequest(@Body() email: string) {
     return this.verificationRequestService.createAdminVerificationRequest(

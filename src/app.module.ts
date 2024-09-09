@@ -9,16 +9,14 @@ import { PrismaService } from './prisma/prisma.service';
 import { JwtModule } from '@nestjs/jwt';
 import { BullModule } from '@nestjs/bullmq';
 import { AdminModule } from './admin/admin.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
-    UserModule,
     ConfigModule.forRoot({
       isGlobal: true,
       validate: validate,
     }),
-    AuthModule,
-    VerificationRequestModule,
     JwtModule.register({
       global: true,
     }),
@@ -28,6 +26,10 @@ import { AdminModule } from './admin/admin.module';
         port: 6379,
       },
     }),
+    ScheduleModule.forRoot(),
+    UserModule,
+    VerificationRequestModule,
+    AuthModule,
     AdminModule,
   ],
   controllers: [AppController],

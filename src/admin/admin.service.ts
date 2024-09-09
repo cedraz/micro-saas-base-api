@@ -3,6 +3,11 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateAdminDto } from './dto/create-admin.dto';
 import * as bcrypt from 'bcrypt';
 import { ErrorMessagesHelper } from 'src/helpers/error-messages.helper';
+import { Admin } from './entities/admin.entity';
+import { Prisma } from '@prisma/client';
+import { AdminPaginationDto } from './dto/admin.pagination.dto';
+import { PaginationResultDto } from 'src/common/entities/pagination-result.entity';
+import { UpdateAdminDto } from './dto/update-admin.dto';
 
 @Injectable()
 export class AdminService {
@@ -74,6 +79,81 @@ export class AdminService {
       },
       data: {
         password_hash,
+      },
+    });
+  }
+
+  async findAll(
+    adminPaginationDto: AdminPaginationDto,
+  ): Promise<PaginationResultDto<Admin>> {
+    const AND: Prisma.AdminWhereInput[] = [];
+
+    if (adminPaginationDto.q) {
+      AND.push({
+        OR: [
+          {
+            name: {
+              contains: adminPaginationDto.q,
+              mode: 'insensitive',
+            },
+          },
+        ],
+      });
+    }
+
+    const admins = await this.prismaService.admin.findMany({
+      where: { AND },
+      orderBy: [
+        {
+          created_at: adminPaginationDto.orderByCreatedAt ? 'desc' : undefined,
+        },
+        { name: 'asc' },
+      ],
+      skip: adminPaginationDto.init,
+      take: adminPaginationDto.limit,
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        created_at: true,
+        updated_at: true,
+        role: true,
+      },
+    });
+
+    return {
+      init: adminPaginationDto.init,
+      limit: adminPaginationDto.limit,
+      total: admins.length,
+      results: admins,
+    };
+  }
+
+  async delete(id: string) {
+    await this.prismaService.admin.delete({
+      where: {
+        id,
+      },
+    });
+  }
+
+  async updateProfile(id: string, data: UpdateAdminDto) {
+    const admin = await this.prismaService.admin.findUnique({
+      where: {
+        id,
+      },
+    });
+
+    if (!admin) {
+      throw new NotFoundException(ErrorMessagesHelper.USER_NOT_FOUND);
+    }
+
+    return this.prismaService.admin.update({
+      where: {
+        id,
+      },
+      data: {
+        ...data,
       },
     });
   }
