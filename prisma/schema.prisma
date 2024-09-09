@@ -52,19 +52,19 @@ model User {
 enum VerificationType {
   EMAIL_VERIFICATION
   PASSWORD_RESET
+  CREATE_ADMIN_ACCOUNT
 }
 
 model VerificationRequest {
   id         String           @id @default(uuid())
-  identifier String
-  token      String           @unique
+  identifier String           @unique
+  token      String
   type       VerificationType
   expires    DateTime
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  @@unique([identifier, token])
   @@map("verification_requests")
 }
 
@@ -74,13 +74,13 @@ enum Role {
 }
 
 model Admin {
-  id         String   @id @default(uuid())
-  name       String
-  email      String   @unique
-  password   String
-  role       Role
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+  id            String   @id @default(uuid())
+  name          String
+  email         String   @unique
+  password_hash String
+  role          Role
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
 
   @@map("admins")
 }

@@ -1,0 +1,4 @@
+export const QueueNames = {
+  INGEST_EVENT_QUEUE: 'INGEST_EVENT_QUEUE',
+  SEND_EMAIL_QUEUE: 'SEND_EMAIL_QUEUE',
+};

@@ -13,9 +13,7 @@ export type EmailData = {
 export class MailerService {
   private transporter: nodemailer.Transporter;
 
-  constructor(
-    private configService: ConfigService,
-  ) {
+  constructor(private configService: ConfigService) {
     this.transporter = nodemailer.createTransport({
       host: this.configService.get('MAIL_HOST'),
       port: this.configService.get('MAIL_PORT'),
@@ -25,8 +23,8 @@ export class MailerService {
         pass: this.configService.get('MAIL_PASS'),
       },
       tls: {
-        ciphers:'SSLv3'
-      }
+        ciphers: 'SSLv3',
+      },
     });
   }
 

@@ -8,6 +8,7 @@ import { VerificationRequestModule } from './verification-request/verification-r
 import { PrismaService } from './prisma/prisma.service';
 import { JwtModule } from '@nestjs/jwt';
 import { BullModule } from '@nestjs/bullmq';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { BullModule } from '@nestjs/bullmq';
         port: 6379,
       },
     }),
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [PrismaService],

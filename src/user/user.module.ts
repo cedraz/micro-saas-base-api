@@ -8,11 +8,7 @@ import { JobsModule } from 'src/jobs/jobs.module';
 
 @Module({
   controllers: [UserController],
-  providers: [
-    UserService,
-    PrismaService,
-    VerificationRequestService,
-  ],
+  providers: [UserService, PrismaService, VerificationRequestService],
   exports: [UserService],
   imports: [VerificationRequestModule, JobsModule],
 })

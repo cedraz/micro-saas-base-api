@@ -11,6 +11,8 @@ import { MailerModule } from 'src/mailer/mailer.module';
 import { UserModule } from 'src/user/user.module';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { JobsModule } from 'src/jobs/jobs.module';
+import { AdminService } from 'src/admin/admin.service';
+import { AdminModule } from 'src/admin/admin.module';
 
 @Module({
   controllers: [AuthController],
@@ -19,6 +21,7 @@ import { JobsModule } from 'src/jobs/jobs.module';
     GoogleStrategy,
     GoogleOAuthGuard,
     UserService,
+    AdminService,
     PrismaService,
     JwtStrategy,
   ],
@@ -27,6 +30,7 @@ import { JobsModule } from 'src/jobs/jobs.module';
     VerificationRequestModule,
     MailerModule,
     UserModule,
+    AdminModule,
     JobsModule,
   ],
 })

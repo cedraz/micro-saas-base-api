@@ -55,8 +55,19 @@ export class AuthController {
     return { access_token };
   }
 
-  @Post()
+  @Post('user')
+  @ApiOperation({
+    summary: 'User login',
+  })
   login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto);
+  }
+
+  @ApiOperation({
+    summary: 'Admin login',
+  })
+  @Post('admin')
+  adminLogin(@Body() loginDto: LoginDto) {
+    return this.authService.adminLogin(loginDto);
   }
 }
