@@ -27,8 +27,6 @@ export class UserService {
   async create(createUserDto: CreateUserDto) {
     const userExists = await this.findByEmail(createUserDto.email);
 
-    console.log(userExists);
-
     if (userExists) {
       throw new ConflictException(ErrorMessagesHelper.USER_ALREADY_EXISTS);
     }

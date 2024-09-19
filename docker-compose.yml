@@ -4,7 +4,7 @@ services:
   db:
     image: postgres:alpine
     ports:
-      - 5432:5432
+      - 5434:5432
     environment:
       - POSTGRES_USER=johndoe
       - POSTGRES_PASSWORD=randompassword  # Certifique-se de que esta senha está correta
@@ -14,7 +14,7 @@ services:
     image: redis:7-alpine
     container_name: redis-microsaas
     ports:
-      - 6379:6379
+      - 6380:6379
     environment:
       - NODE_ENV=dev
     deploy:

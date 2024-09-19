@@ -10,6 +10,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { BullModule } from '@nestjs/bullmq';
 import { AdminModule } from './admin/admin.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { StripeModule } from './stripe/stripe.module';
 
 @Module({
   imports: [
@@ -23,7 +24,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     BullModule.forRoot({
       connection: {
         host: 'localhost', // name of the service in the docker compose file
-        port: 6379,
+        port: 6380,
       },
     }),
     ScheduleModule.forRoot(),
@@ -31,6 +32,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     VerificationRequestModule,
     AuthModule,
     AdminModule,
+    StripeModule,
   ],
   controllers: [AppController],
   providers: [PrismaService],

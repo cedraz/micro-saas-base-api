@@ -1,12 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsArray } from 'class-validator';
+import { IsArray, IsInt } from 'class-validator';
 
 export class PaginationResultDto<T> {
-  @ApiProperty()
   @IsArray()
   readonly results: T[];
 
-  @ApiProperty()
+  @IsInt()
   total: number;
 
   @ApiProperty({ default: 100 })

@@ -7,21 +7,21 @@ export class UpdateUserDto extends IntersectionType(
 ) {
   @IsString()
   @IsOptional()
-  @ApiProperty()
+  
   nickname?: string;
 
   @IsString()
-  @ApiProperty()
+  
   @IsOptional()
   image?: string;
 
   @IsString()
-  @ApiProperty()
+  
   @IsOptional()
   phone?: string;
 
   @IsString()
-  @ApiProperty()
+  
   @IsOptional()
   name?: string;
 

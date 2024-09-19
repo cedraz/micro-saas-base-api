@@ -2,6 +2,7 @@ import { plainToInstance } from 'class-transformer';
 import {
   IsEnum,
   IsNumber,
+  IsOptional,
   IsString,
   Max,
   Min,
@@ -32,6 +33,7 @@ class EnvironmentVariables {
   @IsString()
   REFRESH_TOKEN_SECRET: string;
 
+  // Google OAuth credentials
   @IsString()
   GOOGLE_CLIENT_ID: string;
 
@@ -41,6 +43,7 @@ class EnvironmentVariables {
   @IsString()
   GOOGLE_AUTH_CALLBACK_URL: string;
 
+  // Mail service credentials
   @IsString()
   MAIL_HOST: string;
 
@@ -57,6 +60,27 @@ class EnvironmentVariables {
 
   @IsString()
   MAIL_SECURE: string;
+
+  // Google Sheets service account credentials
+  @IsString()
+  @IsOptional()
+  GOOGLE_CLIENT_EMAIL?: string;
+
+  @IsString()
+  @IsOptional()
+  GOOGLE_PRIVATE_KEY?: string;
+
+  @IsString()
+  @IsOptional()
+  GOOGLE_REDIRECT_URI?: string;
+
+  @IsString()
+  @IsOptional()
+  GOOGLE_SPREADSHEET_ID?: string;
+
+  // Stripe API keys
+  @IsString()
+  STRIPE_API_KEY: string;
 }
 
 export function validate(config: Record<string, unknown>) {
