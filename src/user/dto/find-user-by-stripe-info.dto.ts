@@ -1,6 +1,6 @@
 import { IsString } from 'class-validator';
 
-export class CreateStripeSCheckoutSessionDto {
+export class FindUserByStripeInfoDto {
   @IsString()
   stripe_customer_id: string;
 

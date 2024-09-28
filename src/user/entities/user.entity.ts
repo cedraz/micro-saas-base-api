@@ -33,7 +33,7 @@ export class User {
   name: string;
 
   @IsDate()
-  email_verified?: Date;
+  email_verified_at?: Date;
 
   @IsDate()
   created_at: Date;

@@ -1,5 +1,7 @@
 import {
   ConflictException,
+  forwardRef,
+  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -15,6 +17,9 @@ import { UserPaginationDto } from './dto/user.pagination.dto';
 import { PaginationResultDto } from 'src/common/entities/pagination-result.entity';
 import { IngestEventQueueService } from 'src/jobs/queues/ingest-event-queue.service';
 import { EventTypeNames } from 'src/helpers/event-type-names.helper';
+import { FindUserByStripeInfoDto } from './dto/find-user-by-stripe-info.dto';
+import { StripeService } from 'src/stripe/stripe.service';
+import { CreateProviderDto } from 'src/auth/dto/create-provider.dto';
 
 @Injectable()
 export class UserService {
@@ -22,9 +27,11 @@ export class UserService {
     private prismaService: PrismaService,
     private verificationRequestService: VerificationRequestService,
     private ingestEventQueueService: IngestEventQueueService,
+    @Inject(forwardRef(() => StripeService))
+    private stripeService: StripeService,
   ) {}
 
-  async create(createUserDto: CreateUserDto) {
+  async create(createUserDto: CreateUserDto): Promise<User> {
     const userExists = await this.findByEmail(createUserDto.email);
 
     if (userExists) {
@@ -40,9 +47,41 @@ export class UserService {
         nickname: createUserDto.nickname,
         name: createUserDto.name,
         phone: createUserDto.phone,
-        image: createUserDto.image,
         password_hash: password_hash,
       },
+      select: {
+        stripe_customer_id: false,
+        stripe_price_id: false,
+        stripe_subscription_id: false,
+        stripe_subscription_status: false,
+        email: true,
+        id: true,
+        email_verified_at: true,
+        name: true,
+        nickname: true,
+        phone: true,
+        created_at: true,
+        updated_at: true,
+        providers: {
+          select: {
+            id: true,
+            user_id: true,
+            created_at: true,
+            updated_at: true,
+            provider_id: true,
+            provider_account_id: true,
+            access_token: true,
+            refresh_token: true,
+            access_token_expires: true,
+          },
+        },
+      },
+    });
+
+    await this.stripeService.createCustomer({
+      email: user.email,
+      name: user.name,
+      user_id: user.id,
     });
 
     await this.verificationRequestService.createVerificationRequest({
@@ -152,7 +191,7 @@ export class UserService {
     return user;
   }
 
-  findOne(id: string) {
+  findById(id: string) {
     return this.prismaService.user.findUnique({
       where: {
         id,
@@ -163,18 +202,18 @@ export class UserService {
     });
   }
 
-  // updateProviders(userId: string, createProviderDto: CreateProviderDto) {
-  //   return this.prismaService.user.update({
-  //     where: {
-  //       id: userId,
-  //     },
-  //     data: {
-  //       providers: {
-  //         create: createProviderDto,
-  //       },
-  //     },
-  //   });
-  // }
+  updateProviders(userId: string, createProviderDto: CreateProviderDto) {
+    return this.prismaService.user.update({
+      where: {
+        id: userId,
+      },
+      data: {
+        providers: {
+          create: createProviderDto,
+        },
+      },
+    });
+  }
 
   update(id: string, updateUserDto: UpdateUserDto) {
     return this.prismaService.user.update({
@@ -182,20 +221,14 @@ export class UserService {
         id,
       },
       data: {
-        providers: {
-          create: {
-            provider_id: updateUserDto.provider_id,
-            provider_account_id: updateUserDto.provider_account_id,
-            access_token: updateUserDto.access_token,
-            refresh_token: updateUserDto.refresh_token,
-            access_token_expires: updateUserDto.access_token_expires,
-          },
-        },
         image: updateUserDto.image,
-        phone: updateUserDto.phone,
         name: updateUserDto.name,
         email_verified_at: updateUserDto.email_verified_at,
         nickname: updateUserDto.nickname,
+        stripe_customer_id: updateUserDto.stripe_customer_id,
+        stripe_subscription_id: updateUserDto.stripe_subscription_id,
+        stripe_price_id: updateUserDto.stripe_price_id,
+        stripe_subscription_status: updateUserDto.stripe_subscription_status,
       },
     });
   }
@@ -230,5 +263,48 @@ export class UserService {
     });
 
     return 'Password recovered';
+  }
+
+  async getUsersStripeInfo(id: string) {
+    const usersStripeInfo = await this.prismaService.user.findUnique({
+      where: {
+        id,
+      },
+      select: {
+        stripe_price_id: true,
+        stripe_subscription_id: true,
+        stripe_subscription_status: true,
+        stripe_customer_id: true,
+      },
+    });
+
+    if (!usersStripeInfo.stripe_price_id) {
+      throw new NotFoundException(
+        ErrorMessagesHelper.USERS_STRIPE_PLAN_NOT_FOUND,
+      );
+    }
+
+    return usersStripeInfo;
+  }
+
+  async findUserByStripeInfo({
+    stripe_customer_id,
+    stripe_subscription_id,
+  }: FindUserByStripeInfoDto) {
+    return await this.prismaService.user.findFirst({
+      where: {
+        OR: [
+          {
+            stripe_subscription_id,
+          },
+          {
+            stripe_customer_id,
+          },
+        ],
+      },
+      select: {
+        id: true,
+      },
+    });
   }
 }

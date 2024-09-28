@@ -33,14 +33,11 @@ export class MasterAuthGuard extends JwtAuthGuard implements CanActivate {
         throw new UnauthorizedException(ErrorMessagesHelper.UNAUTHORIZED);
       }
 
-      const adminExists = await this.adminService.findById(user.id);
-      console.log('Admin existe:', adminExists);
-
-      if (adminExists && adminExists.role === 'MASTER') {
-        return true;
+      if (user.role !== 'MASTER') {
+        throw new ForbiddenException(ErrorMessagesHelper.FORBIDDEN);
       }
 
-      throw new ForbiddenException(ErrorMessagesHelper.FORBIDDEN);
+      return true;
     } catch (error) {
       if (
         error instanceof UnauthorizedException ||

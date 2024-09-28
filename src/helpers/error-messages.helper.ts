@@ -8,4 +8,6 @@ export const ErrorMessagesHelper = {
   CONFLICT: 'Ação conflitante.',
   NO_PAYMENT_METHODS: 'Nenhum método de pagamento encontrado.',
   SUBSCRIPTION_NOT_FOUND: 'Assinatura não encontrada.',
+  EMAIL_NOT_VERIFIED: 'E-mail não verificado.',
+  USERS_STRIPE_PLAN_NOT_FOUND: 'Plano do usuário não encontrado.',
 };

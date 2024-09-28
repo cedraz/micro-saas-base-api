@@ -25,7 +25,7 @@ model Provider {
   updated_at DateTime @updatedAt
 
   user_id String
-  user    User   @relation(fields: [user_id], references: [id])
+  user    User   @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
   @@unique([provider_id, provider_account_id])
   @@map("providers")
@@ -40,6 +40,11 @@ model User {
   name              String?
   phone             String?
   image             String?
+
+  stripe_customer_id         String?
+  stripe_subscription_id     String?
+  stripe_subscription_status String?
+  stripe_price_id            String?
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt

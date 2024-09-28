@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { PassportModule } from '@nestjs/passport';
@@ -13,6 +13,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { JobsModule } from 'src/jobs/jobs.module';
 import { AdminService } from 'src/admin/admin.service';
 import { AdminModule } from 'src/admin/admin.module';
+import { StripeModule } from 'src/stripe/stripe.module';
 
 @Module({
   controllers: [AuthController],
@@ -29,7 +30,8 @@ import { AdminModule } from 'src/admin/admin.module';
     PassportModule,
     VerificationRequestModule,
     MailerModule,
-    UserModule,
+    forwardRef(() => UserModule),
+    forwardRef(() => StripeModule),
     AdminModule,
     JobsModule,
   ],

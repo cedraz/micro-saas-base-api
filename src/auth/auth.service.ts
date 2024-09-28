@@ -46,7 +46,6 @@ export class AuthService {
         nickname: createAuthDto.nickname,
         name: createAuthDto.name,
         phone: createAuthDto.phone,
-        image: createAuthDto.image,
         password: '',
       });
 
@@ -54,7 +53,7 @@ export class AuthService {
         data: {
           provider_id: createAuthDto.provider_id,
           provider_account_id: createAuthDto.provider_account_id,
-          user_id: user.id,
+          user_id: newUser.id,
         },
       });
 
@@ -73,15 +72,12 @@ export class AuthService {
       return user;
     }
 
-    const updatedUser = await this.userService.update(user.id, {
-      provider_id: createAuthDto.provider_id,
+    const updatedUser = await this.userService.updateProviders(user.id, {
       provider_account_id: createAuthDto.provider_account_id,
+      provider_id: createAuthDto.provider_id,
       access_token: createAuthDto.access_token,
-      refresh_token: createAuthDto.refresh_token,
       access_token_expires: createAuthDto.access_token_expires,
-      image: createAuthDto.image,
-      email_verified_at: new Date(),
-      name: createAuthDto.name,
+      refresh_token: createAuthDto.refresh_token,
     });
 
     const accessTokenPayload = {
@@ -114,6 +110,11 @@ export class AuthService {
       throw new NotFoundException(ErrorMessagesHelper.USER_NOT_FOUND);
     }
 
+    if (!user.email_verified_at) {
+      console.log(user.email_verified_at);
+      throw new UnauthorizedException(ErrorMessagesHelper.EMAIL_NOT_VERIFIED);
+    }
+
     const isPasswordValid = await bcrypt.compare(
       loginDto.password,
       user.password_hash,
@@ -125,12 +126,13 @@ export class AuthService {
 
     const accessTokenPayload = {
       sub: user.id,
+      email: user.email,
       expiresIn: new Date(new Date().getTime() + 2 * 60 * 60 * 1000), // 2 hours
     };
 
     const refreshTokenPayload = {
       sub: user.id,
-      expiresIn: new Date(new Date().getTime() + 7 * 24 * 60 * 60 * 1000),
+      expiresIn: new Date(new Date().getTime() + 7 * 24 * 60 * 60 * 1000), // 7 days
     };
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -168,6 +170,7 @@ export class AuthService {
     const accessTokenPayload = {
       sub: admin.id,
       expiresIn: new Date(new Date().getTime() + 2 * 60 * 60 * 1000), // 2 hours
+      role: admin.role,
     };
 
     const refreshTokenPayload = {
@@ -182,6 +185,66 @@ export class AuthService {
         secret: this.configService.get('ACCESS_TOKEN_SECRET'),
       }),
       refresh_token: await this.jwtService.signAsync(refreshTokenPayload, {
+        expiresIn: '7d',
+        secret: this.configService.get('REFRESH_TOKEN_SECRET'),
+      }),
+    };
+  }
+
+  async adminRefreshAccessToken(refreshToken: string) {
+    const payload = this.jwtService.verify(refreshToken, {
+      secret: this.configService.get('REFRESH_TOKEN_SECRET'),
+    });
+
+    const admin = await this.adminService.findById(payload.sub);
+
+    if (!admin) {
+      throw new NotFoundException(ErrorMessagesHelper.USER_NOT_FOUND);
+    }
+
+    const accessTokenPayload = {
+      sub: admin.id,
+      expiresIn: new Date(new Date().getTime() + 2 * 60 * 60 * 1000), // 2 hours
+      role: admin.role,
+    };
+
+    return {
+      access_token: await this.jwtService.signAsync(accessTokenPayload, {
+        expiresIn: '2h',
+        secret: this.configService.get('ACCESS_TOKEN_SECRET'),
+      }),
+      refreshToken,
+    };
+  }
+
+  async refreshAccessToken(refreshToken: string) {
+    const payload = this.jwtService.verify(refreshToken, {
+      secret: this.configService.get('REFRESH_TOKEN_SECRET'),
+    });
+
+    const user = await this.userService.findById(payload.sub);
+
+    if (!user) {
+      throw new NotFoundException(ErrorMessagesHelper.USER_NOT_FOUND);
+    }
+
+    const accessTokenPayload = {
+      sub: user.id,
+      email: user.email,
+      expiresIn: new Date(new Date().getTime() + 2 * 60 * 60 * 1000), // 2 hours
+    };
+
+    const refreshTokenPayload = {
+      sub: user.id,
+      expiresIn: new Date(new Date().getTime() + 7 * 24 * 60 * 60 * 1000), // 7 days
+    };
+
+    return {
+      access_token: await this.jwtService.signAsync(accessTokenPayload, {
+        expiresIn: '2h',
+        secret: this.configService.get('ACCESS_TOKEN_SECRET'),
+      }),
+      refreshToken: await this.jwtService.signAsync(refreshTokenPayload, {
         expiresIn: '7d',
         secret: this.configService.get('REFRESH_TOKEN_SECRET'),
       }),

@@ -7,15 +7,10 @@ import {
   HttpException,
 } from '@nestjs/common';
 import { JwtAuthGuard } from './jwt-auth.guard';
-import { AdminService } from 'src/admin/admin.service';
 import { ErrorMessagesHelper } from 'src/helpers/error-messages.helper';
 
 @Injectable()
 export class AdminAuthGuard extends JwtAuthGuard implements CanActivate {
-  constructor(private readonly adminService: AdminService) {
-    super();
-  }
-
   async canActivate(context: ExecutionContext): Promise<boolean> {
     try {
       const canActivate = await super.canActivate(context);
@@ -31,9 +26,7 @@ export class AdminAuthGuard extends JwtAuthGuard implements CanActivate {
         throw new UnauthorizedException(ErrorMessagesHelper.UNAUTHORIZED);
       }
 
-      const adminExists = await this.adminService.findById(user.id);
-
-      if (!adminExists) {
+      if (!user.role) {
         throw new ForbiddenException(ErrorMessagesHelper.FORBIDDEN);
       }
 

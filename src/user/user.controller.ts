@@ -51,7 +51,7 @@ export class UserController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   getProfile(@Request() req) {
-    return this.userService.findOne(req.user.id);
+    return this.userService.findById(req.user.id);
   }
 
   @ApiOperation({
@@ -60,8 +60,8 @@ export class UserController {
   @Get(':id')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  findOne(@Param('id') id: string) {
-    return this.userService.findOne(id);
+  findById(@Param('id') id: string) {
+    return this.userService.findById(id);
   }
 
   @ApiOperation({

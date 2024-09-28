@@ -81,6 +81,9 @@ class EnvironmentVariables {
   // Stripe API keys
   @IsString()
   STRIPE_API_KEY: string;
+
+  @IsString()
+  STRIPE_WEBHOOK_SECRET: string;
 }
 
 export function validate(config: Record<string, unknown>) {

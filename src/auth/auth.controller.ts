@@ -63,11 +63,29 @@ export class AuthController {
     return this.authService.login(loginDto);
   }
 
+  @Get('user/refresh')
+  @ApiOperation({
+    summary: 'Refresh token (user)',
+  })
+  userRefresh(@Request() req: ExpressRequest) {
+    return this.authService.refreshAccessToken(req.cookies['refresh_token']);
+  }
+
   @ApiOperation({
     summary: 'Admin login',
   })
   @Post('admin')
   adminLogin(@Body() loginDto: LoginDto) {
     return this.authService.adminLogin(loginDto);
+  }
+
+  @Get('admin/refresh')
+  @ApiOperation({
+    summary: 'Refresh token (admin)',
+  })
+  adminRefresh(@Request() req: ExpressRequest) {
+    return this.authService.adminRefreshAccessToken(
+      req.cookies['refresh_token'],
+    );
   }
 }
