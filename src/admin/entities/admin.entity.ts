@@ -10,9 +10,6 @@ export class Admin {
   @IsEmail()
   email: string;
 
-  @IsString()
-  role: string;
-
   @IsDate()
   created_at: Date;
 

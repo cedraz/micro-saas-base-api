@@ -1,4 +1,4 @@
-import { IsString, IsEmail } from 'class-validator';
+import { IsString, IsEmail, IsOptional } from 'class-validator';
 
 export class CreateAdminDto {
   @IsString()
@@ -9,4 +9,8 @@ export class CreateAdminDto {
 
   @IsString()
   password: string;
+
+  @IsString()
+  @IsOptional()
+  company_name?: string;
 }

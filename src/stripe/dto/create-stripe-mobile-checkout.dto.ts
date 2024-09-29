@@ -3,7 +3,7 @@ import { IsEmail, IsEnum, IsInt, IsUUID } from 'class-validator';
 
 export class CreateStripeMobileCheckoutDto {
   @IsUUID()
-  user_id: string;
+  admin_id: string;
 
   @IsEmail()
   email: string;

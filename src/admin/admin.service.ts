@@ -4,14 +4,23 @@ import { CreateAdminDto } from './dto/create-admin.dto';
 import * as bcrypt from 'bcrypt';
 import { ErrorMessagesHelper } from 'src/helpers/error-messages.helper';
 import { Admin } from './entities/admin.entity';
-import { Prisma } from '@prisma/client';
+import { Prisma, VerificationType } from '@prisma/client';
 import { AdminPaginationDto } from './dto/admin.pagination.dto';
 import { PaginationResultDto } from 'src/common/entities/pagination-result.entity';
 import { UpdateAdminDto } from './dto/update-admin.dto';
+import { EventTypeNames } from 'src/helpers/event-type-names.helper';
+import { IngestEventQueueService } from 'src/jobs/queues/ingest-event-queue.service';
+import { VerificationRequestService } from 'src/verification-request/verification-request.service';
+import { CreateProviderDto } from 'src/auth/dto/create-provider.dto';
+import { FindAdminByStripeInfoDto } from './dto/find-admin-by-stripe-info.dto';
 
 @Injectable()
 export class AdminService {
-  constructor(private prismaService: PrismaService) {}
+  constructor(
+    private prismaService: PrismaService,
+    private verificationRequestService: VerificationRequestService,
+    private ingestEventQueueService: IngestEventQueueService,
+  ) {}
 
   findByEmail(email: string) {
     return this.prismaService.admin.findUnique({
@@ -27,38 +36,74 @@ export class AdminService {
         id,
       },
       select: {
-        role: true,
         created_at: true,
         email: true,
         id: true,
         name: true,
         updated_at: true,
+        email_verified_at: true,
+        stripe_customer_id: true,
+        stripe_subscription_id: true,
+        stripe_price_id: true,
+        stripe_subscription_status: true,
+        company_name: true,
+        image: true,
+        providers: true,
+        landing_page: true,
       },
     });
   }
 
-  async createMasterAdmin(createAdminDto: CreateAdminDto) {
+  async create(createAdminDto: CreateAdminDto) {
     const salt = await bcrypt.genSalt(10);
     const password_hash = await bcrypt.hash(createAdminDto.password, salt);
 
-    return this.prismaService.admin.create({
+    const admin = await this.prismaService.admin.create({
       data: {
-        ...createAdminDto,
         password_hash,
-        role: 'MASTER',
+        email: createAdminDto.email,
+        name: createAdminDto.name,
+        company_name: createAdminDto.company_name,
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        created_at: true,
+        updated_at: true,
+        company_name: true,
+        image: true,
       },
     });
+
+    await this.verificationRequestService.createVerificationRequest({
+      createVerificationRequestDto: {
+        identifier: admin.email,
+        type: VerificationType.EMAIL_VERIFICATION,
+      },
+      expiresIn: new Date(Date.now() + 1000 * 60 * 60 * 24), // 24 hours
+    });
+
+    await this.ingestEventQueueService.execute({
+      date: new Date(),
+      email: admin.email,
+      event_type: EventTypeNames.ADMIN_CREATED,
+      id: admin.id,
+      name: admin.name,
+    });
+
+    return admin;
   }
 
-  async createCommonAdmin(createAdminDto: CreateAdminDto) {
-    const salt = await bcrypt.genSalt(10);
-    const password_hash = await bcrypt.hash(createAdminDto.password, salt);
-
-    return this.prismaService.admin.create({
+  updateProviders(admin_id: string, createProviderDto: CreateProviderDto) {
+    return this.prismaService.admin.update({
+      where: {
+        id: admin_id,
+      },
       data: {
-        ...createAdminDto,
-        password_hash,
-        role: 'COMMON',
+        providers: {
+          create: createProviderDto,
+        },
       },
     });
   }
@@ -67,7 +112,7 @@ export class AdminService {
     const admin = await this.findByEmail(email);
 
     if (!admin) {
-      throw new NotFoundException(ErrorMessagesHelper.USER_NOT_FOUND);
+      throw new NotFoundException(ErrorMessagesHelper.ADMIN_NOT_FOUND);
     }
 
     const salt = await bcrypt.genSalt(10);
@@ -117,7 +162,6 @@ export class AdminService {
         name: true,
         created_at: true,
         updated_at: true,
-        role: true,
       },
     });
 
@@ -145,7 +189,7 @@ export class AdminService {
     });
 
     if (!admin) {
-      throw new NotFoundException(ErrorMessagesHelper.USER_NOT_FOUND);
+      throw new NotFoundException(ErrorMessagesHelper.ADMIN_NOT_FOUND);
     }
 
     return this.prismaService.admin.update({
@@ -154,6 +198,27 @@ export class AdminService {
       },
       data: {
         ...data,
+      },
+    });
+  }
+
+  async findAdminByStripeInfo({
+    stripe_customer_id,
+    stripe_subscription_id,
+  }: FindAdminByStripeInfoDto) {
+    return await this.prismaService.admin.findFirst({
+      where: {
+        OR: [
+          {
+            stripe_subscription_id,
+          },
+          {
+            stripe_customer_id,
+          },
+        ],
+      },
+      select: {
+        id: true,
       },
     });
   }

@@ -23,13 +23,13 @@ export class PasswordRecoveryAuthGuard
       }
 
       const request = context.switchToHttp().getRequest();
-      const user = request.user;
+      const admin = request.admin;
 
-      if (!user) {
+      if (!admin) {
         throw new UnauthorizedException(ErrorMessagesHelper.UNAUTHORIZED);
       }
 
-      if (user.type !== 'PASSWORD_RECOVERY') {
+      if (admin.type !== 'PASSWORD_RECOVERY') {
         throw new ForbiddenException(ErrorMessagesHelper.FORBIDDEN);
       }
 
@@ -46,10 +46,10 @@ export class PasswordRecoveryAuthGuard
     }
   }
 
-  handleRequest(err, user) {
-    if (err || !user) {
+  handleRequest(err, admin) {
+    if (err || !admin) {
       throw err || new UnauthorizedException(ErrorMessagesHelper.UNAUTHORIZED);
     }
-    return user;
+    return admin;
   }
 }

@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -24,35 +18,54 @@ model Provider {
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  user_id String
-  user    User   @relation(fields: [user_id], references: [id])
+  admin_id String
+  admin    Admin  @relation(fields: [admin_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
   @@unique([provider_id, provider_account_id])
   @@map("providers")
 }
 
-model User {
+model Admin {
   id                String    @id @default(uuid())
+  name              String
   email             String    @unique
-  nickname          String
   password_hash     String?
-  email_verified_at DateTime?
-  name              String?
-  phone             String?
   image             String?
+  email_verified_at DateTime?
+  company_name      String?
+
+  stripe_customer_id         String?
+  stripe_subscription_id     String?
+  stripe_price_id            String?
+  stripe_subscription_status String?
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  providers Provider[]
+  providers           Provider[]
+  landing_page        LandingPage[]
+  testimonial_configs TestimonialConfig[]
+  api_key             ApiKey?
 
-  @@map("users")
+  @@map("admins")
+}
+
+model ApiKey {
+  id  String @id @default(uuid())
+  key String @unique
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  admin_id String @unique
+  admin    Admin  @relation(fields: [admin_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@map("api_keys")
 }
 
 enum VerificationType {
   EMAIL_VERIFICATION
   PASSWORD_RESET
-  CREATE_ADMIN_ACCOUNT
 }
 
 model VerificationRequest {
@@ -68,19 +81,66 @@ model VerificationRequest {
   @@map("verification_requests")
 }
 
-enum Role {
-  COMMON
-  MASTER
+model LandingPage {
+  id   String @id @default(uuid())
+  name String
+  link String
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  testimonial_config_id String
+  admin_id              String
+  admin                 Admin             @relation(fields: [admin_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  testimonial_config    TestimonialConfig @relation(fields: [testimonial_config_id], references: [id])
+  testimonials          Testimonial[]
+
+  @@map("landing_pages")
 }
 
-model Admin {
-  id            String   @id @default(uuid())
-  name          String
-  email         String   @unique
-  password_hash String
-  role          Role
-  created_at    DateTime @default(now())
-  updated_at    DateTime @updatedAt
+enum TestimonialFormat {
+  SLIDER
+  GRID
+}
 
-  @@map("admins")
+model TestimonialConfig {
+  id                 String            @id @default(uuid())
+  format             TestimonialFormat
+  title_char_limit   Int
+  message_char_limit Int
+  expiration_limit   Int
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  landing_page LandingPage[]
+  admin        Admin         @relation(fields: [admin_id], references: [id])
+  admin_id     String
+
+  @@map("testimonial_configs")
+}
+
+enum TestimonialStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model Testimonial {
+  id     String            @id @default(uuid())
+  status TestimonialStatus
+
+  customer_name String?
+  title         String?
+  message       String?
+  stars         Int?
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  landing_page_id String
+  landing_page    LandingPage @relation(fields: [landing_page_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([customer_name, landing_page_id])
+  @@map("testimonials")
 }

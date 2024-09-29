@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
-import { UserModule } from './user/user.module';
 import { ConfigModule } from '@nestjs/config';
 import { validate } from './config/env.validation';
 import { AuthModule } from './auth/auth.module';
@@ -11,6 +10,10 @@ import { BullModule } from '@nestjs/bullmq';
 import { AdminModule } from './admin/admin.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { StripeModule } from './stripe/stripe.module';
+import { ApiKeyModule } from './api-key/api-key.module';
+import { LandingPageModule } from './landing-page/landing-page.module';
+import { TestimonialConfigModule } from './testimonial-config/testimonial-config.module';
+import { TestimonialModule } from './testimonial/testimonial.module';
 
 @Module({
   imports: [
@@ -28,11 +31,14 @@ import { StripeModule } from './stripe/stripe.module';
       },
     }),
     ScheduleModule.forRoot(),
-    UserModule,
     VerificationRequestModule,
     AuthModule,
     AdminModule,
     StripeModule,
+    ApiKeyModule,
+    LandingPageModule,
+    TestimonialConfigModule,
+    TestimonialModule,
   ],
   controllers: [AppController],
   providers: [PrismaService],

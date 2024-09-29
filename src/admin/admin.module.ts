@@ -1,20 +1,20 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { AdminController } from './admin.controller';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { AdminAuthGuard } from 'src/auth/guards/admin-auth.guard';
-import { MasterAuthGuard } from 'src/auth/guards/master-auth.guard';
-import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { StripeModule } from 'src/stripe/stripe.module';
+import { JobsModule } from 'src/jobs/jobs.module';
+import { VerificationRequestModule } from 'src/verification-request/verification-request.module';
+import { VerificationRequestService } from 'src/verification-request/verification-request.service';
 
 @Module({
   controllers: [AdminController],
-  providers: [
-    AdminService,
-    PrismaService,
-    AdminAuthGuard,
-    MasterAuthGuard,
-    JwtAuthGuard,
-  ],
+  providers: [AdminService, PrismaService, VerificationRequestService],
   exports: [AdminService],
+  imports: [
+    forwardRef(() => StripeModule),
+    JobsModule,
+    forwardRef(() => VerificationRequestModule),
+  ],
 })
 export class AdminModule {}

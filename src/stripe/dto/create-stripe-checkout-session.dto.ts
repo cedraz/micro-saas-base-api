@@ -5,8 +5,5 @@ export class CreateStripeSCheckoutSessionDto {
   stripe_customer_id: string;
 
   @IsString()
-  success_url: string;
-
-  @IsString()
-  cancel_url: string;
+  stripe_subscription_id: string;
 }

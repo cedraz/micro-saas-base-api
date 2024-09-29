@@ -8,14 +8,7 @@ export class CreateAuthDto extends CreateProviderDto {
   email: string;
 
   @IsString()
-  @IsNotEmpty()
-  nickname: string;
-
-  @IsString()
   image?: string;
-
-  @IsString()
-  phone?: string;
 
   @IsString()
   name?: string;

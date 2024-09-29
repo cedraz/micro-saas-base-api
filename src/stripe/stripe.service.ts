@@ -1,16 +1,13 @@
-import {
-  Injectable,
-  NotFoundException,
-  NotFoundException,
-} from '@nestjs/common';
+import Stripe from 'stripe';
+import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+
 import { CreateStripeMobileCheckoutDto } from './dto/create-stripe-mobile-checkout.dto';
 import { CreateStripeCustomerDto } from './dto/create-stripe-customer.dto';
-import { UserService } from 'src/user/user.service';
-import Stripe from 'stripe';
-import { CreateStripeSubscriptionDto } from './dto/create-stripe-subscription.dto';
 import { CreateStripeSCheckoutSessionDto } from './dto/create-stripe-checkout-session.dto';
-import { ErrorMessagesHelper } from 'src/helpers/error-messages.helper';
+import dayjs from 'dayjs';
+import { HandleStripeWebhookDto } from './dto/handle-stripe-webhook.dto';
+import { AdminService } from 'src/admin/admin.service';
 
 @Injectable()
 export class StripeService {
@@ -19,172 +16,11 @@ export class StripeService {
 
   constructor(
     private configService: ConfigService,
-    private userService: UserService,
+    @Inject(forwardRef(() => AdminService)) private adminService: AdminService,
   ) {
     this.stripeApiKey = this.configService.get('STRIPE_API_KEY');
     this.stripe = new Stripe(this.stripeApiKey, {
       apiVersion: '2024-06-20',
-    });
-  }
-
-  async createCheckoutSession(
-    createStripeSCheckoutSessionDto: CreateStripeSCheckoutSessionDto,
-  ) {
-    const session = await this.stripe.checkout.sessions.create({
-      mode: 'setup',
-      customer: createStripeSCheckoutSessionDto.stripe_customer_id,
-      success_url: createStripeSCheckoutSessionDto.success_url,
-      cancel_url: createStripeSCheckoutSessionDto.cancel_url,
-    });
-
-    return session.url;
-  }
-
-  async createSubscription(
-    createStripeSubscriptionDto: CreateStripeSubscriptionDto,
-  ) {
-    const payments = await this.getPaymentMethods(
-      createStripeSubscriptionDto.stripe_customer_id,
-    );
-
-    if (payments.data.length === 0) {
-      throw new NotFoundException(ErrorMessagesHelper.NO_PAYMENT_METHODS);
-    }
-
-    return await this.stripe.subscriptions.create({
-      customer: createStripeSubscriptionDto.stripe_customer_id,
-      items: [
-        {
-          price: this.configService.get(
-            `STRIPE_${createStripeSubscriptionDto.plan.toUpperCase()}_PRICE_ID`,
-          ),
-        },
-      ],
-    });
-  }
-
-  async generateInvoiceUrl(subscriptionId: string) {
-    const subscription = await this.stripe.subscriptions.retrieve(
-      subscriptionId,
-      {
-        expand: ['items.data.price'],
-      },
-    );
-
-    if (!subscription) {
-      throw new NotFoundException(ErrorMessagesHelper.SUBSCRIPTION_NOT_FOUND);
-    }
-
-    const price = subscription.items.data[0].price;
-    await this.stripe.invoiceItems.create({
-      customer: subscription.customer as string,
-      amount: price.unit_amount,
-      currency: price.currency,
-      description: 'Adiantamento de fatura do próximo mês',
-    });
-
-    const invoice = await this.stripe.invoices.create({
-      customer: subscription.customer as string,
-      subscription: subscriptionId,
-      auto_advance: false, // Não avançar automaticamente até que o pagamento seja feito
-    });
-
-    const finalizedInvoice = await this.stripe.invoices.finalizeInvoice(
-      invoice.id,
-    );
-
-    return finalizedInvoice.hosted_invoice_url;
-  }
-
-  async getSubscriptionPaymentPercentage(subscriptionId: string) {
-    const subscription = await this.stripe.subscriptions.retrieve(
-      subscriptionId,
-      {
-        expand: ['items.data.price'],
-      },
-    );
-
-    if (
-      subscription.items.data[0].price.id ===
-      this.configService.get('STRIPE_PREMIUM_PRICE_ID')
-    ) {
-      const startDate = new Date(subscription.start_date * 1000);
-      const subscriptionTime = this.configService.get('STRIPE_PREMIUM_TIME'); // time in months
-
-      const paidInvoices = await this.stripe.invoices.list({
-        customer: subscription.customer as string,
-        status: 'paid',
-        subscription: subscriptionId,
-      });
-
-      const paidMonths = paidInvoices.data.filter((item) => item.total > 0);
-    }
-  }
-
-  async getCustomerSubscriptions(customer_id: string) {
-    const subscription = await this.stripe.subscriptions.list({
-      customer: customer_id,
-    });
-
-    return subscription.data;
-  }
-
-  async getSubscriptionPaymentDetails(subscriptionId: string) {
-    const subscription =
-      await this.stripe.subscriptions.retrieve(subscriptionId);
-
-    if (!subscription) {
-      throw new NotFoundException('Subscription not found.');
-    }
-
-    // Obtenha a data de início e a data de término do período atual da assinatura
-    const startDate = new Date(subscription.start_date * 1000);
-    const endDate = new Date(subscription.current_period_end * 1000);
-
-    console.log({
-      startDate,
-      endDate,
-      subscription,
-    });
-
-    // Calcule o total de meses entre a data de início e a data de término
-    const totalMonths =
-      (endDate.getFullYear() - startDate.getFullYear()) * 12 +
-      (endDate.getMonth() - startDate.getMonth());
-
-    // Obtenha todas as faturas pagas associadas à assinatura
-    const paidInvoices = await this.stripe.invoices.list({
-      customer: subscription.customer as string,
-      status: 'paid',
-      subscription: subscriptionId,
-    });
-
-    // Calcule o número de meses pagos com base nas faturas pagas
-    const paidMonths = paidInvoices.data.length;
-
-    return {
-      totalMonths,
-      paidMonths,
-      subscription,
-    };
-  }
-
-  async getPaymentMethods(customer_id: string) {
-    return await this.stripe.paymentMethods.list({
-      customer: customer_id,
-    });
-  }
-
-  async createCustomer(createStripeCustomerDto: CreateStripeCustomerDto) {
-    const customer = await this.getCustomerByEmail(
-      createStripeCustomerDto.email,
-    );
-
-    if (customer) return customer;
-
-    return await this.stripe.customers.create({
-      email: createStripeCustomerDto.email,
-      name: createStripeCustomerDto.name,
     });
   }
 
@@ -196,16 +32,100 @@ export class StripeService {
     return customer.data[0];
   }
 
+  async createCustomer(
+    createStripeCustomerDto: CreateStripeCustomerDto,
+  ): Promise<
+    Stripe.Customer & {
+      subscription_id: string;
+      price_id: string;
+      subscription_status: string;
+    }
+  > {
+    const customer = await this.getCustomerByEmail(
+      createStripeCustomerDto.email,
+    );
+
+    if (customer) {
+      console.log('Caiu aqui');
+      return {
+        ...customer,
+        subscription_id: customer.subscriptions.data[0].id,
+        price_id: customer.subscriptions.data[0].items.data[0].price.id,
+        subscription_status: customer.subscriptions.data[0].status,
+      };
+    }
+
+    const createdCustomer = await this.stripe.customers.create({
+      email: createStripeCustomerDto.email,
+      name: createStripeCustomerDto.name,
+    });
+
+    const price_id = this.configService.get(`STRIPE_FREE_PRICE_ID`);
+
+    const subscription = await this.stripe.subscriptions.create({
+      customer: createdCustomer.id,
+      items: [
+        {
+          price: price_id,
+        },
+      ],
+    });
+
+    return {
+      ...createdCustomer,
+      subscription_id: subscription.id,
+      price_id,
+      subscription_status: subscription.status,
+    };
+  }
+
+  async createCheckoutSession(
+    createStripeSCheckoutSessionDto: CreateStripeSCheckoutSessionDto,
+  ) {
+    const subscription = await this.stripe.subscriptionItems.list({
+      subscription: createStripeSCheckoutSessionDto.stripe_subscription_id,
+      limit: 1,
+    });
+
+    const session = await this.stripe.billingPortal.sessions.create({
+      customer: createStripeSCheckoutSessionDto.stripe_customer_id,
+      return_url: 'https://www.youtube.com/?themeRefresh=1',
+      flow_data: {
+        type: 'subscription_update_confirm',
+        after_completion: {
+          type: 'redirect',
+          redirect: {
+            return_url: 'https://www.youtube.com/?themeRefresh=1',
+          },
+        },
+        subscription_update_confirm: {
+          subscription: createStripeSCheckoutSessionDto.stripe_subscription_id,
+          items: [
+            {
+              id: subscription.data[0].id,
+              price: this.configService.get('STRIPE_PREMIUM_PRICE_ID'),
+              quantity: 1,
+            },
+          ],
+        },
+      },
+    });
+
+    return {
+      url: session.url,
+    };
+  }
+
   async createMobileCheckout(
     createStripeMobileCheckoutDto: CreateStripeMobileCheckoutDto,
   ) {
-    const user = await this.userService.findOne(
-      createStripeMobileCheckoutDto.user_id,
+    const admin = await this.adminService.findById(
+      createStripeMobileCheckoutDto.admin_id,
     );
 
     const customer = await this.createCustomer({
       email: createStripeMobileCheckoutDto.email,
-      name: user.name,
+      name: admin.name,
     });
 
     const ephemeralKey = await this.stripe.ephemeralKeys.create({
@@ -235,5 +155,68 @@ export class StripeService {
         customer_id: customer.id,
       },
     };
+  }
+
+  async getAdminsCurrentPlan(admin_id: string) {
+    const admin = await this.adminService.findById(admin_id);
+
+    const subscription = await this.stripe.subscriptions.retrieve(
+      admin.stripe_subscription_id,
+    );
+
+    const endDate = new Date(subscription.current_period_end * 1000);
+
+    const daysRemaining = dayjs(endDate).diff(dayjs(), 'days');
+
+    const freePlan = this.configService.get('STRIPE_FREE_PRICE_ID');
+
+    return {
+      plan: admin.stripe_price_id === freePlan ? 'FREE' : 'PREMIUM',
+      daysRemaining,
+      endDate,
+    };
+  }
+
+  async handleWebhook(handleStripeWebhookDto: HandleStripeWebhookDto) {
+    const { signature, rawBody } = handleStripeWebhookDto;
+
+    const stripeEvent = this.stripe.webhooks.constructEvent(
+      rawBody,
+      signature,
+      this.configService.get('STRIPE_WEBHOOK_SECRET'),
+    );
+
+    switch (stripeEvent.type) {
+      case 'customer.subscription.updated':
+        await this.handleSubscriptionProcess({
+          object: stripeEvent.data.object as Stripe.Subscription,
+        });
+        break;
+      default:
+        return;
+    }
+  }
+
+  async handleSubscriptionProcess(event: { object: Stripe.Subscription }) {
+    const stripe_customer_id = event.object.customer as string;
+    const stripe_subscription_id = event.object.id as string;
+    const stripe_subscription_status = event.object.status;
+    const stripe_price_id = event.object.items.data[0].price.id;
+
+    const adminExists = await this.adminService.findAdminByStripeInfo({
+      stripe_customer_id,
+      stripe_subscription_id,
+    });
+
+    // REFATORAR ESSE ERRO
+    if (!adminExists) {
+      throw new Error('admin of stripeCustomerId not found');
+    }
+
+    await this.adminService.updateProfile(adminExists.id, {
+      stripe_price_id,
+      stripe_subscription_id,
+      stripe_subscription_status,
+    });
   }
 }

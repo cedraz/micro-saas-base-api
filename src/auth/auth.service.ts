@@ -8,7 +8,6 @@ import { JwtService } from '@nestjs/jwt';
 import { CreateAuthDto } from './dto/create-auth.dto';
 import { LoginDto } from './dto/login.dto';
 import * as bcrypt from 'bcrypt';
-import { UserService } from 'src/user/user.service';
 import { ConfigService } from '@nestjs/config';
 import { AdminService } from 'src/admin/admin.service';
 import { ErrorMessagesHelper } from 'src/helpers/error-messages.helper';
@@ -17,7 +16,6 @@ import { ErrorMessagesHelper } from 'src/helpers/error-messages.helper';
 export class AuthService {
   constructor(
     private prismaService: PrismaService,
-    private userService: UserService,
     private adminService: AdminService,
     private jwtService: JwtService,
     private configService: ConfigService,
@@ -37,16 +35,13 @@ export class AuthService {
     });
   }
 
-  async validateUserOutsideProvider(createAuthDto: CreateAuthDto) {
-    const user = await this.userService.findByEmail(createAuthDto.email);
+  async validateAdminOutsideProvider(createAuthDto: CreateAuthDto) {
+    const admin = await this.adminService.findByEmail(createAuthDto.email);
 
-    if (!user) {
-      const newUser = await this.userService.create({
+    if (!admin) {
+      const newadmin = await this.adminService.create({
         email: createAuthDto.email,
-        nickname: createAuthDto.nickname,
         name: createAuthDto.name,
-        phone: createAuthDto.phone,
-        image: createAuthDto.image,
         password: '',
       });
 
@@ -54,12 +49,12 @@ export class AuthService {
         data: {
           provider_id: createAuthDto.provider_id,
           provider_account_id: createAuthDto.provider_account_id,
-          user_id: user.id,
+          admin_id: newadmin.id,
         },
       });
 
       return {
-        user: newUser,
+        admin: newadmin,
         provider,
       };
     }
@@ -70,32 +65,29 @@ export class AuthService {
     );
 
     if (providerExists) {
-      return user;
+      return admin;
     }
 
-    const updatedUser = await this.userService.update(user.id, {
-      provider_id: createAuthDto.provider_id,
+    const updatedadmin = await this.adminService.updateProviders(admin.id, {
       provider_account_id: createAuthDto.provider_account_id,
+      provider_id: createAuthDto.provider_id,
       access_token: createAuthDto.access_token,
-      refresh_token: createAuthDto.refresh_token,
       access_token_expires: createAuthDto.access_token_expires,
-      image: createAuthDto.image,
-      email_verified_at: new Date(),
-      name: createAuthDto.name,
+      refresh_token: createAuthDto.refresh_token,
     });
 
     const accessTokenPayload = {
-      sub: user.id,
+      sub: admin.id,
       expiresIn: new Date(new Date().getTime() + 2 * 60 * 60 * 1000),
     };
 
     const refreshTokenPayload = {
-      sub: user.id,
+      sub: admin.id,
       expiresIn: new Date(new Date().getTime() + 7 * 24 * 60 * 60 * 1000),
     };
 
     return {
-      updatedUser,
+      updatedadmin,
       access_token: await this.jwtService.signAsync(accessTokenPayload, {
         expiresIn: '2h',
         secret: this.configService.get('ACCESS_TOKEN_SECRET'),
@@ -108,52 +100,14 @@ export class AuthService {
   }
 
   async login(loginDto: LoginDto) {
-    const user = await this.userService.findByEmail(loginDto.email);
-
-    if (!user) {
-      throw new NotFoundException(ErrorMessagesHelper.USER_NOT_FOUND);
-    }
-
-    const isPasswordValid = await bcrypt.compare(
-      loginDto.password,
-      user.password_hash,
-    );
-
-    if (!isPasswordValid) {
-      throw new UnauthorizedException(ErrorMessagesHelper.INVALID_CREDENTIALS);
-    }
-
-    const accessTokenPayload = {
-      sub: user.id,
-      expiresIn: new Date(new Date().getTime() + 2 * 60 * 60 * 1000), // 2 hours
-    };
-
-    const refreshTokenPayload = {
-      sub: user.id,
-      expiresIn: new Date(new Date().getTime() + 7 * 24 * 60 * 60 * 1000),
-    };
-
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { password_hash, ...userWithoutPassword } = user;
-
-    return {
-      userWithoutPassword,
-      access_token: await this.jwtService.signAsync(accessTokenPayload, {
-        expiresIn: '2h',
-        secret: this.configService.get('ACCESS_TOKEN_SECRET'),
-      }),
-      refresh_token: await this.jwtService.signAsync(refreshTokenPayload, {
-        expiresIn: '7d',
-        secret: this.configService.get('REFRESH_TOKEN_SECRET'),
-      }),
-    };
-  }
-
-  async adminLogin(loginDto: LoginDto) {
     const admin = await this.adminService.findByEmail(loginDto.email);
 
     if (!admin) {
-      throw new NotFoundException(ErrorMessagesHelper.USER_NOT_FOUND);
+      throw new NotFoundException(ErrorMessagesHelper.ADMIN_NOT_FOUND);
+    }
+
+    if (!admin.email_verified_at) {
+      throw new UnauthorizedException(ErrorMessagesHelper.EMAIL_NOT_VERIFIED);
     }
 
     const isPasswordValid = await bcrypt.compare(
@@ -167,21 +121,59 @@ export class AuthService {
 
     const accessTokenPayload = {
       sub: admin.id,
+      email: admin.email,
       expiresIn: new Date(new Date().getTime() + 2 * 60 * 60 * 1000), // 2 hours
     };
 
     const refreshTokenPayload = {
       sub: admin.id,
-      expiresIn: new Date(new Date().getTime() + 7 * 24 * 60 * 60 * 1000),
+      expiresIn: new Date(new Date().getTime() + 7 * 24 * 60 * 60 * 1000), // 7 days
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password_hash, ...adminWithoutPassword } = admin;
+
     return {
-      admin,
+      adminWithoutPassword,
       access_token: await this.jwtService.signAsync(accessTokenPayload, {
         expiresIn: '2h',
         secret: this.configService.get('ACCESS_TOKEN_SECRET'),
       }),
       refresh_token: await this.jwtService.signAsync(refreshTokenPayload, {
+        expiresIn: '7d',
+        secret: this.configService.get('REFRESH_TOKEN_SECRET'),
+      }),
+    };
+  }
+
+  async refreshAccessToken(refreshToken: string) {
+    const payload = this.jwtService.verify(refreshToken, {
+      secret: this.configService.get('REFRESH_TOKEN_SECRET'),
+    });
+
+    const admin = await this.adminService.findById(payload.sub);
+
+    if (!admin) {
+      throw new NotFoundException(ErrorMessagesHelper.ADMIN_NOT_FOUND);
+    }
+
+    const accessTokenPayload = {
+      sub: admin.id,
+      email: admin.email,
+      expiresIn: new Date(new Date().getTime() + 2 * 60 * 60 * 1000), // 2 hours
+    };
+
+    const refreshTokenPayload = {
+      sub: admin.id,
+      expiresIn: new Date(new Date().getTime() + 7 * 24 * 60 * 60 * 1000), // 7 days
+    };
+
+    return {
+      access_token: await this.jwtService.signAsync(accessTokenPayload, {
+        expiresIn: '2h',
+        secret: this.configService.get('ACCESS_TOKEN_SECRET'),
+      }),
+      refreshToken: await this.jwtService.signAsync(refreshTokenPayload, {
         expiresIn: '7d',
         secret: this.configService.get('REFRESH_TOKEN_SECRET'),
       }),

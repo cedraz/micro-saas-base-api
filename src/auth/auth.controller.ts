@@ -55,19 +55,19 @@ export class AuthController {
     return { access_token };
   }
 
-  @Post('user')
   @ApiOperation({
-    summary: 'User login',
+    summary: 'login',
   })
-  login(@Body() loginDto: LoginDto) {
+  @Post('login')
+  adminLogin(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto);
   }
 
+  @Get('refresh')
   @ApiOperation({
-    summary: 'Admin login',
+    summary: 'Refresh token',
   })
-  @Post('admin')
-  adminLogin(@Body() loginDto: LoginDto) {
-    return this.authService.adminLogin(loginDto);
+  adminRefresh(@Request() req: ExpressRequest) {
+    return this.authService.refreshAccessToken(req.cookies['refresh_token']);
   }
 }

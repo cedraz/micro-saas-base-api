@@ -1,9 +1,16 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Headers,
+  Post,
+  RawBodyRequest,
+  Req,
+} from '@nestjs/common';
 import { StripeService } from './stripe.service';
 import { ApiTags } from '@nestjs/swagger';
 import { CreateStripeMobileCheckoutDto } from './dto/create-stripe-mobile-checkout.dto';
-import { CreateStripeSubscriptionDto } from './dto/create-stripe-subscription.dto';
 import { CreateStripeSCheckoutSessionDto } from './dto/create-stripe-checkout-session.dto';
+import { Request } from 'express';
 
 @ApiTags('stripe')
 @Controller('stripe')
@@ -17,13 +24,6 @@ export class StripeController {
     return this.stripeService.createMobileCheckout(createStripeMobileCheckout);
   }
 
-  @Post('subscription')
-  createSubscription(
-    @Body() createStripeSubscriptionDto: CreateStripeSubscriptionDto,
-  ) {
-    return this.stripeService.createSubscription(createStripeSubscriptionDto);
-  }
-
   @Post('checkout-session')
   createCheckoutSession(
     @Body() createStripeSCheckoutSessionDto: CreateStripeSCheckoutSessionDto,
@@ -33,20 +33,14 @@ export class StripeController {
     );
   }
 
-  @Get('subscription/:customer_id')
-  getCustomerSubscription(@Param('customer_id') customer_id: string) {
-    return this.stripeService.getCustomerSubscriptions(customer_id);
-  }
-
-  @Get('subscription/:subscription_id/percentage')
-  getSubscriptionPaymentPercentage(
-    @Param('subscription_id') subscription_id: string,
+  @Post('webhook')
+  async handleWebhook(
+    @Headers('stripe-signature') signature: string,
+    @Req() request: RawBodyRequest<Request>,
   ) {
-    return this.stripeService.getSubscriptionPaymentPercentage(subscription_id);
-  }
-
-  @Get('subscription/:customer_id/:subscription_id/force-payment')
-  forcePayment(@Param('subscription_id') subscription_id: string) {
-    return this.stripeService.generateInvoiceUrl(subscription_id);
+    return this.stripeService.handleWebhook({
+      signature,
+      rawBody: request.rawBody,
+    });
   }
 }

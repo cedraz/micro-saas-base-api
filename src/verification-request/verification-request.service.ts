@@ -6,6 +6,7 @@ import { VerifyEmailDto } from './dto/verify-email.dto';
 import { JwtService } from '@nestjs/jwt';
 import { ValidateVerificationRequestDto } from './dto/validate-verification-request.dto';
 import { SendEmailQueueService } from 'src/jobs/queues/send-email-queue.service';
+import { StripeService } from 'src/stripe/stripe.service';
 
 @Injectable()
 export class VerificationRequestService {
@@ -13,10 +14,11 @@ export class VerificationRequestService {
     private prismaService: PrismaService,
     private jwtService: JwtService,
     private sendEmailQueueService: SendEmailQueueService,
+    private stripeService: StripeService,
   ) {}
 
-  isVerificationRequestExpired(verificationRequest: VerificationRequest) {
-    return new Date() > verificationRequest.expires;
+  isVerificationRequestExpired(expires: Date) {
+    return new Date() > expires;
   }
 
   async createVerificationRequest({
@@ -77,7 +79,7 @@ export class VerificationRequestService {
     const verificationRequest = await this.createVerificationRequest({
       createVerificationRequestDto: {
         identifier: email,
-        type: VerificationType.CREATE_ADMIN_ACCOUNT,
+        type: VerificationType.EMAIL_VERIFICATION,
       },
       expiresIn: new Date(new Date().getTime() + 20 * 60 * 1000), // 20 minutes
     });
@@ -105,7 +107,7 @@ export class VerificationRequestService {
 
     if (
       !verificationRequest &&
-      !this.isVerificationRequestExpired(verificationRequest)
+      !this.isVerificationRequestExpired(verificationRequest.expires)
     ) {
       return false;
     }
@@ -133,17 +135,39 @@ export class VerificationRequestService {
 
     if (
       !verificationRequest &&
-      !this.isVerificationRequestExpired(verificationRequest)
+      !this.isVerificationRequestExpired(verificationRequest.expires)
     ) {
       return false;
     }
 
-    await this.prismaService.user.update({
+    const admin = await this.prismaService.admin.findFirst({
+      where: {
+        email: verifyEmailDto.identifier,
+      },
+    });
+
+    const stripeCustomer = await this.stripeService.createCustomer({
+      email: admin.email,
+      name: admin.name,
+      admin_id: admin.id,
+    });
+
+    await this.prismaService.admin.update({
       where: {
         email: verifyEmailDto.identifier,
       },
       data: {
         email_verified_at: new Date(),
+        stripe_price_id: stripeCustomer.price_id,
+        stripe_customer_id: stripeCustomer.id,
+        stripe_subscription_id: stripeCustomer.subscription_id,
+        stripe_subscription_status: stripeCustomer.subscription_status,
+      },
+    });
+
+    await this.prismaService.verificationRequest.delete({
+      where: {
+        identifier: verifyEmailDto.identifier,
       },
     });
 

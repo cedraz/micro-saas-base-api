@@ -11,11 +11,6 @@ export class ClearVerificationRequestsConsumerService extends WorkerHost {
   }
 
   async process({ data }: Job<ClearVerificationRequestsDto>) {
-    console.log({
-      message: 'processing',
-      data,
-    });
-
     await this.prismaService.verificationRequest.deleteMany({
       where: {
         id: {

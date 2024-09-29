@@ -1,15 +1,8 @@
-import {
-  Body,
-  ConflictException,
-  Controller,
-  Post,
-  UseGuards,
-} from '@nestjs/common';
+import { Body, ConflictException, Controller, Post } from '@nestjs/common';
 import { VerificationRequestService } from './verification-request.service';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { CreateVerificationRequestDto } from './dto/create-verification-request.dto';
-import { MasterAuthGuard } from 'src/auth/guards/master-auth.guard';
 import { ValidateVerificationRequestDto } from './dto/validate-verification-request.dto';
 import { ErrorMessagesHelper } from 'src/helpers/error-messages.helper';
 
@@ -21,26 +14,13 @@ export class VerificationRequestController {
   ) {}
 
   @ApiOperation({
-    summary:
-      'Send verification request to create a common admin (only for master admins)',
-  })
-  @ApiBearerAuth()
-  @Post('create-admin')
-  @UseGuards(MasterAuthGuard)
-  createAdminVerificationRequest(@Body() email: string) {
-    return this.verificationRequestService.createAdminVerificationRequest(
-      email,
-    );
-  }
-
-  @ApiOperation({
-    summary: 'Create a verification request (not for admin creation)',
+    summary: 'Create a verification request',
   })
   @Post('create-verification-request')
   createVerificationRequest(
     @Body() createVerificationRequestDto: CreateVerificationRequestDto,
   ) {
-    if (createVerificationRequestDto.type === 'CREATE_ADMIN_ACCOUNT') {
+    if (createVerificationRequestDto.type === 'EMAIL_VERIFICATION') {
       throw new ConflictException(ErrorMessagesHelper.CONFLICT);
     }
 
@@ -62,7 +42,7 @@ export class VerificationRequestController {
   }
 
   @ApiOperation({
-    summary: 'Verify an email (only for common user email verification)',
+    summary: 'Verify an email (only for admin email verification)',
   })
   @Post('verify-email')
   verifyEmail(@Body() verifyEmailDto: VerifyEmailDto) {

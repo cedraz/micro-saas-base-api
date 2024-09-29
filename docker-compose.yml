@@ -8,11 +8,11 @@ services:
     environment:
       - POSTGRES_USER=johndoe
       - POSTGRES_PASSWORD=randompassword  # Certifique-se de que esta senha está correta
-      - POSTGRES_DB=mydb
+      - POSTGRES_DB=testimonial-automation
 
   redis:
     image: redis:7-alpine
-    container_name: redis-microsaas
+    container_name: redis-testimonial-automation
     ports:
       - 6380:6379
     environment:

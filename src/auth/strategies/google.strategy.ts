@@ -25,7 +25,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     profile: any,
     done: VerifyCallback,
   ): Promise<any> {
-    const user = {
+    const admin = {
       id: profile.id,
       email: profile.emails[0].value,
       name: profile.displayName,
@@ -33,18 +33,16 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
       provider: profile.provider,
       accessToken,
       refresh_token,
-      nickname: profile.name.givenName,
     };
 
-    const token = await this.authService.validateUserOutsideProvider({
-      email: user.email,
-      nickname: user.nickname,
-      name: user.name,
-      image: user.photo,
-      provider_id: user.id,
-      provider_account_id: user.id,
-      access_token: user.accessToken,
-      refresh_token: user.refresh_token,
+    const token = await this.authService.validateAdminOutsideProvider({
+      email: admin.email,
+      name: admin.name,
+      image: admin.photo,
+      provider_id: admin.id,
+      provider_account_id: admin.id,
+      access_token: admin.accessToken,
+      refresh_token: admin.refresh_token,
     });
 
     done(null, token);

@@ -1,2 +1,0 @@
--- AlterEnum
-ALTER TYPE "VerificationType" ADD VALUE 'CREATE_ADMIN_ACCOUNT';

@@ -28,5 +28,5 @@ export class Provider {
   updated_at: Date;
 
   @IsString()
-  user_id: string;
+  admin_id: string;
 }

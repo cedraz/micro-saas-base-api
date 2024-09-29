@@ -1,0 +1,5 @@
+-- AlterTable
+ALTER TABLE "testimonials" ALTER COLUMN "customer_name" DROP NOT NULL,
+ALTER COLUMN "title" DROP NOT NULL,
+ALTER COLUMN "message" DROP NOT NULL,
+ALTER COLUMN "stars" DROP NOT NULL;
