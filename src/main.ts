@@ -5,12 +5,10 @@ import { ConfigService } from '@nestjs/config';
 import { BadRequestException, ValidationPipe } from '@nestjs/common';
 import { changeErrorMessage } from './utils/errorMessageValidator';
 import { NestExpressApplication } from '@nestjs/platform-express';
-
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     rawBody: true,
   });
-
   const config = new DocumentBuilder()
     .setTitle('Micro SaaS')
     .setDescription('Micro SaaS Base API docs')
