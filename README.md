@@ -1,9 +1,7 @@
 # Setup
 
 To run the application, please follow these steps:
-
 1. Make sure you have Docker installed on your machine.
-
 2. Clone the repository to your local machine:
 
   ```shell
