@@ -9,6 +9,7 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     rawBody: true,
   });
+  
   const config = new DocumentBuilder()
     .setTitle('Micro SaaS')
     .setDescription('Micro SaaS Base API docs')
